@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { Rnd } from 'react-rnd';
+import React, {useState, useEffect} from 'react';
+import {Rnd} from 'react-rnd';
 import axios from 'axios';
+import {FaPlus, FaTimes} from 'react-icons/fa';
+
 
 const AdminInterface = () => {
     const [posters, setPosters] = useState([]);
+    const [authenticated, setAuthenticated] = useState(false);
+    const [password, setPassword] = useState('');
+    const [authError, setAuthError] = useState(false);
 
     useEffect(() => {
         // Fetch posters from the API
@@ -20,9 +25,23 @@ const AdminInterface = () => {
         fetchPosters();
     }, []);
 
+    const handlePasswordSubmit = async () => {
+        try {
+            const response = await axios.post('http://localhost:3001/api/authenticate', { password });
+            if (response.data.success) {
+                setAuthenticated(true);
+                setAuthError(false);
+            } else {
+                setAuthError(true);
+            }
+        } catch (error) {
+            setAuthError(true);
+        }
+    };
+
     const updatePoster = async (id, x, y, width, height) => {
         try {
-            await axios.put(`http://localhost:3001/api/posters/${id}`, { x, y, width, height });
+            await axios.put(`http://localhost:3001/api/posters/${id}`, {x, y, width, height});
         } catch (error) {
             console.error('Error updating poster:', error);
         }
@@ -49,7 +68,7 @@ const AdminInterface = () => {
 
     const handleDelete = async (posterId) => {
         try {
-            await fetch(`http://localhost:3001/api/posters/${posterId}`, { method: 'DELETE' });
+            await fetch(`http://localhost:3001/api/posters/${posterId}`, {method: 'DELETE'});
             setPosters(posters.filter((poster) => poster.id !== posterId));
         } catch (error) {
             console.error('Error deleting poster:', error);
@@ -58,7 +77,7 @@ const AdminInterface = () => {
 
     const handleDragStop = (id, e, d) => {
         const newPosters = posters.map(poster =>
-            poster.id === id ? { ...poster, x: d.x, y: d.y } : poster
+            poster.id === id ? {...poster, x: d.x, y: d.y} : poster
         );
         setPosters(newPosters);
         const poster = newPosters.find(poster => poster.id === id);
@@ -85,52 +104,71 @@ const AdminInterface = () => {
     }
 
     return (
-        <div className="p-4 h-screen flex flex-col">
-            <div className="mb-4">
-                <h1 className="text-2xl font-bold mb-4">Admin Interface</h1>
-                <input
-                    type="file"
-                    accept="image/jpeg"
-                    name="image"
-                    onChange={handleFileUpload}
-                    className="mb-4"
-                />
-            </div>
-            <div className="flex-grow overflow-auto relative" style={{height: '100vh'}}>
-                {posters.map((poster) => (
-                    <Rnd
-                        key={poster.id}
-                        size={{ width: poster.width, height: poster.height }}
-                        position={{ x: poster.x, y: poster.y }}
-                        onDragStart={preventDragHandler}
-                        onDragStop={(e, d) => handleDragStop(poster.id, e, d)}
-                        onResizeStop={(e, direction, ref, delta, position) =>
-                            handleResizeStop(poster.id, e, direction, ref, delta, position)}
-                        bounds="parent"
-                    >
-                        <div
-                            className="flex items-center justify-between bg-white p-2 mb-2 rounded shadow"
+        <div className="flex flex-col" style={{height: '100vh'}}>
+            {!authenticated ? (
+                <div className="flex items-center justify-center h-full">
+                    <div className="p-4 bg-white shadow rounded">
+                        <h2 className="text-xl font-bold mb-4">Enter Password</h2>
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="border border-gray-500 p-2 mb-4 w-full"
+                        />
+                        {authError && <p className="text-red-500 mb-4">Authentication failed. Please try again.</p>}
+                        <button
+                            onClick={handlePasswordSubmit}
+                            className="bg-blue-500 text-white px-4 py-2 rounded"
                         >
-                            <img
-                                src={`http://localhost:3001${poster.imageUrl}`}
-                                style={{
-                                    width: '100%',
-                                    height: '100%',
-                                }}
-                                alt={poster.title}
-                                className="object-cover"
-                            />
-                            <span>{poster.title}</span>
-                            <button
-                                onClick={() => handleDelete(poster.id)}
-                                className="bg-red-500 text-white px-2 py-1 rounded"
-                            >
-                                Delete
-                            </button>
-                        </div>
-                    </Rnd>
-                ))}
-            </div>
+                            Submit
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="flex-grow overflow-hidden relative bulletin-board bg-[url('https://i.pinimg.com/736x/fa/bb/b7/fabbb72b66b00f0e9c6c888b2bb9369a.jpg')] bg-cover">
+                    <input
+                        type="file"
+                        accept="image/jpeg"
+                        name="image"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="absolute top-0 right-0 m-4 cursor-pointer">
+                        <FaPlus className="text-3xl text-gray-500 hover:text-gray-700" />
+                    </label>
+                    {posters.map((poster) => (
+                        <Rnd
+                            key={poster.id}
+                            size={{width: poster.width, height: poster.height}}
+                            position={{x: poster.x, y: poster.y}}
+                            onDragStart={preventDragHandler}
+                            onDragStop={(e, d) => handleDragStop(poster.id, e, d)}
+                            onResizeStop={(e, direction, ref, delta, position) =>
+                                handleResizeStop(poster.id, e, direction, ref, delta, position)}
+                            bounds="parent"
+                        >
+                            <div className="relative flex items-center justify-between bg-white rounded shadow">
+                                <img
+                                    src={`http://localhost:3001${poster.imageUrl}`}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                    }}
+                                    alt={poster.title}
+                                    className="object-cover"
+                                />
+                                <button
+                                    onClick={() => handleDelete(poster.id)}
+                                    className="absolute top-0 right-0 bg-red-500 text-white m-2 p-2 rounded-full"
+                                >
+                                    <FaTimes className="text-lg" />
+                                </button>
+                            </div>
+                        </Rnd>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
