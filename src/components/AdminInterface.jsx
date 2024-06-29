@@ -52,10 +52,10 @@ const AdminInterface = () => {
         const formData = new FormData();
         formData.append('image', file);
         formData.append('title', "TITLE");
-        formData.append('x', 50);
-        formData.append('y', 50);
-        formData.append('width', 100);
-        formData.append('height', 100);
+        formData.append('x', 0);
+        formData.append('y', 0);
+        formData.append('width', 0.25);
+        formData.append('height', 0.25);
 
         try {
             const response = await axios.post("http://localhost:3001/api/posters", formData);
@@ -77,7 +77,7 @@ const AdminInterface = () => {
 
     const handleDragStop = (id, e, d) => {
         const newPosters = posters.map(poster =>
-            poster.id === id ? {...poster, x: d.x, y: d.y} : poster
+            poster.id === id ? {...poster, x: d.x / window.innerWidth, y: d.y / window.innerHeight} : poster
         );
         setPosters(newPosters);
         const poster = newPosters.find(poster => poster.id === id);
@@ -88,10 +88,10 @@ const AdminInterface = () => {
         const newPosters = posters.map(poster =>
             poster.id === id ? {
                 ...poster,
-                width: parseInt(ref.style.width),
-                height: parseInt(ref.style.height),
-                x: position.x,
-                y: position.y
+                width: parseInt(ref.style.width) / window.innerWidth,
+                height: parseInt(ref.style.height) / window.innerHeight,
+                x: position.x / window.innerWidth,
+                y: position.x / window.innerHeight
             } : poster
         );
         setPosters(newPosters);
@@ -140,8 +140,8 @@ const AdminInterface = () => {
                     {posters.map((poster) => (
                         <Rnd
                             key={poster.id}
-                            size={{width: poster.width, height: poster.height}}
-                            position={{x: poster.x, y: poster.y}}
+                            size={{width: poster.width * window.innerWidth, height: poster.height * window.innerHeight}}
+                            position={{x: poster.x * window.innerWidth, y: poster.y * window.innerHeight}}
                             onDragStart={preventDragHandler}
                             onDragStop={(e, d) => handleDragStop(poster.id, e, d)}
                             onResizeStop={(e, direction, ref, delta, position) =>
